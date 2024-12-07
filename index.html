@@ -1,0 +1,173 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Control Granja Inteligente</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-darker: #1E1E1E;
+            --accent-color: #4A90E2;
+            --text-color: #E0E0E0;
+            --button-hover: #3A7BD5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #dht {
+            background-color: var(--bg-darker);
+            text-align: center;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .btn button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background-color: var(--accent-color);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn button svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .btn button:hover {
+            background-color: var(--button-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .btn button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="dht"></div>
+        <div class="btn-grid btn">
+            <button id="btn-led" onclick="setLED()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+                LED
+            </button>
+            <button id="btn-ventilador" onclick="setVentilador()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wind">
+                    <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>
+                </svg>
+                Ventilador
+            </button>
+            <button id="btn-alimentacion" onclick="setAlimentacion()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bowl">
+                    <path d="M20.5 8.5l.28-1.4A2 2 0 0 0 18.82 5H5.18a2 2 0 0 0-1.94 2.09l.78 7.91a2 2 0 0 0 1.94 1.91h11.84a2 2 0 0 0 1.94-1.91l.54-5.5"/><path d="M10.3 14s.36-1.3 1.7-1.3 1.7 1.3 1.7 1.3"/>
+                </svg>
+                Alimentación
+            </button>
+            <button id="btn-riego" onclick="setRiego()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-droplet">
+                    <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.74C14 6.54 12 4 12 4s-2 2.54-4 5.26C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+                </svg>
+                Riego
+            </button>
+            <button id="btn-musica" onclick="setMusica()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-music">
+                    <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+                </svg>
+                Música
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Funciones para enviar comandos al servidor (sin cambios)
+        function setLED() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/set?value=LED", true);
+            xhr.send();
+        }
+        
+        function setVentilador() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/set?value=VENTILADOR", true);
+            xhr.send();
+        }
+        
+        function setAlimentacion() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/set?value=ALIMENTACION", true);
+            xhr.send();
+        }
+        
+        function setRiego() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/set?value=RIEGO", true);
+            xhr.send();
+        }
+
+        function setMusica() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/set?value=MUSICA", true);
+            xhr.send();
+        }
+        
+        // Actualizar datos de sensores cada segundo
+        setInterval(function() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("dht").innerHTML = this.responseText;
+                }
+            };
+            xhttp.open("GET", "/dht", true);
+            xhttp.send();
+        }, 1000);
+    </script>
+</body>
+</html>
