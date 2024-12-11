@@ -1,44 +1,45 @@
 #include <Arduino.h>
-#include <WiFi.h>              // Librería para manejar la conexión WiFi en el ESP32
-#include <AsyncTCP.h>          // Librería para manejar conexiones TCP de manera asincrónica
-#include <ESPAsyncWebServer.h> // Librería para configurar un servidor web asincrónico
-#include <LiquidCrystal_I2C.h> // Librería para manejar pantallas LCD con interfaz I2C
-#include <dht11.h>             // Librería para el sensor de temperatura y humedad DHT11
+#include <WiFi.h>               // Librería para manejar la conexión WiFi en el ESP32
+#include <AsyncTCP.h>           // Librería para manejar conexiones TCP de manera asincrónica
+#include <ESPAsyncWebServer.h>  // Librería para configurar un servidor web asincrónico
+#include <LiquidCrystal_I2C.h>  // Librería para manejar pantallas LCD con interfaz I2C
+#include <dht11.h>              // Librería para el sensor de temperatura y humedad DHT11
 
-// Definición de pines de los componentes
-#define PIN_DHT11 17         // Pin del sensor de temperatura y humedad
-#define PIN_LED 27           // Pin del LED
-#define PIN_VENTILADOR1 19   // Pin de entrada del ventilador (IN+)
-#define PIN_VENTILADOR2 18   // Pin de entrada del ventilador (IN-)
-#define PIN_VAPOR 35         // Pin del sensor de vapor
-#define PIN_LUZ 34           // Pin del fotorresistor (sensor de luz)
-#define PIN_HUMEDAD_SUELO 32 // Pin del sensor de humedad del suelo
-#define PIN_NIVEL_AGUA 33    // Pin del sensor de nivel de agua
-#define PIN_RELE 25          // Pin del relé
-#define BUZZER_PIN 16        // Pin del buzzer
+#define PIN_DHT11 17          // Pin del sensor de temperatura y humedad
+#define PIN_LED 27            // Pin del LED
+#define PIN_VENTILADOR1 18    // Pin de entrada del ventilador (IN-)
+#define PIN_VAPOR 35          // Pin del sensor de vapor
+#define PIN_LUZ 34            // Pin del fotorresistor (sensor de luz)
+#define PIN_HUMEDAD_SUELO 32  // Pin del sensor de humedad del suelo
+#define PIN_NIVEL_AGUA 33     // Pin del sensor de nivel de agua
+#define PIN_RELE 25           // Pin del relé
+#define BUZZER_PIN 16         // Pin del buzzer
 
 // Notas de la melodía "Feliz Navidad"
 int melody[] = {
-    330, 330, 330, 330, 330, 330, 330, 349, 330, 294, 349, 330,
-    330, 330, 330, 330, 330, 330, 349, 330, 294, 349, 330, 330,
-    330, 330, 330, 330, 330, 349, 330, 294};
-    
+  330, 330, 330, 330, 330, 330, 330, 349, 330, 294, 349, 330,
+  330, 330, 330, 330, 330, 330, 349, 330, 294, 349, 330, 330,
+  330, 330, 330
+};
+
+// Duraciones de las notas (en tiempos relativos)
 int durations[] = {
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-    4, 4, 4, 4, 4, 4, 4, 4};
+  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+  4, 4, 4
+};
 
 // Definición de objetos
 dht11 SensorDHT11;
-LiquidCrystal_I2C pantalla(0x27, 16, 2); // Pantalla LCD I2C (dirección 0x27)
+LiquidCrystal_I2C pantalla(0x27, 16, 2);  // Pantalla LCD I2C (dirección 0x27)
 
 // Credenciales de WiFi
-const char *ssid = "DESKTOP-TFAMG6O"; // Nombre de la red Wi-Fi
-const char *contrasena = "123456789"; // Contraseña de la red Wi-Fi
+const char *ssid = "DESKTOP-TFAMG6O";  // Nombre de la red Wi-Fi
+const char *contrasena = "123456789";  // Contraseña de la red Wi-Fi
 
 // Variables de control para los dispositivos
-static int EstadoLED = 0;        // Control del LED
-static int EstadoVentilador = 0; // Control del ventilador
+static int EstadoLED = 0;         // Control del LED
+static int EstadoVentilador = 0;  // Control del ventilador
 static int EstadoMusica = 0;
 
 // Crear objeto servidor web en el puerto 80
@@ -136,6 +137,10 @@ const char pagina_html[] PROGMEM = R"rawliteral(
             transform: translateY(1px);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+
+        .btn-detener button {
+          background-color: red;
+        }
     </style>
 </head>
 <body>
@@ -169,6 +174,10 @@ const char pagina_html[] PROGMEM = R"rawliteral(
                     <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
                 </svg>
                 Música
+            </button>
+            <button id="btn-detener" class="btn-detener" onclick="setDetener()"  >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ban"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+                Detener
             </button>
         </div>
     </div>
@@ -204,6 +213,12 @@ const char pagina_html[] PROGMEM = R"rawliteral(
             xhr.open("GET", "/set?value=MUSICA", true);
             xhr.send();
         }
+
+        function setDetener() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/set?value=DETENER", true);
+            xhr.send();
+        }
         
         // Actualizar datos de sensores cada segundo
         setInterval(function() {
@@ -222,156 +237,147 @@ const char pagina_html[] PROGMEM = R"rawliteral(
 )rawliteral";
 
 // Función para recopilar y formatear los datos de los sensores
-String FusionarDatos()
-{
-    String datosBuffer;
-    int chk = SensorDHT11.read(PIN_DHT11); // Leer datos del sensor DHT11
+String FusionarDatos() {
+  String datosBuffer;
+  int chk = SensorDHT11.read(PIN_DHT11);  // Leer datos del sensor DHT11
 
-    // Obtener lecturas de los diferentes sensores
-    String Vapor = String(analogRead(PIN_VAPOR) / 4095.0 * 100);
-    String Luz = String(analogRead(PIN_LUZ));
+  // Obtener lecturas de los diferentes sensores
+  String Vapor = String(analogRead(PIN_VAPOR) / 4095.0 * 100);
+  String Luz = String(analogRead(PIN_LUZ));
 
-    // Calcular humedad del suelo
-    int valorHumedadSuelo = analogRead(PIN_HUMEDAD_SUELO) / 4095.0 * 100 * 2.3;
-    valorHumedadSuelo = valorHumedadSuelo > 100 ? 100 : valorHumedadSuelo;
-    String HumedadSuelo = String(valorHumedadSuelo);
+  // Calcular humedad del suelo
+  int valorHumedadSuelo = analogRead(PIN_HUMEDAD_SUELO) / 4095.0 * 100 * 2.3;
+  valorHumedadSuelo = valorHumedadSuelo > 100 ? 100 : valorHumedadSuelo;
+  String HumedadSuelo = String(valorHumedadSuelo);
 
-    // Calcular nivel de agua
-    int valorNivelAgua = analogRead(PIN_NIVEL_AGUA) / 4095.0 * 100 * 2.5;
-    valorNivelAgua = valorNivelAgua > 100 ? 100 : valorNivelAgua;
-    String NivelAgua = String(valorNivelAgua);
+  // Calcular nivel de agua
+  int valorNivelAgua = analogRead(PIN_NIVEL_AGUA) / 4095.0 * 100 * 2.5;
+  valorNivelAgua = valorNivelAgua > 100 ? 100 : valorNivelAgua;
+  String NivelAgua = String(valorNivelAgua);
 
-    // Obtener temperatura y humedad
-    String Temperatura = String(SensorDHT11.temperature);
-    String Humedad = String(SensorDHT11.humidity);
+  // Obtener temperatura y humedad
+  String Temperatura = String(SensorDHT11.temperature);
+  String Humedad = String(SensorDHT11.humidity);
 
-    // Formatear los datos para la página web
-    datosBuffer += "<p><h2>Datos de Sensores</h2><br/>";
-    datosBuffer += "<b>Temperatura:</b><b>" + Temperatura + "</b><b> °C</b><br/><hr>";
-    datosBuffer += "<b>Humedad del Aire:</b><b>" + Humedad + "</b><b> %rh</b><br/><hr>";
-    datosBuffer += "<b>Nivel de Agua:</b><b>" + NivelAgua + "</b><b> %</b><br/><hr>";
-    datosBuffer += "<b>Vapor:</b><b>" + Vapor + "</b><b>%</b><br/><hr>";
-    datosBuffer += "<b>Luz:</b><b>" + Luz + "</b><br/><hr>";
-    datosBuffer += "<b>Humedad del Suelo:</b><b>" + HumedadSuelo + "</b><b> %</b><br/></p>";
+  // Formatear los datos para la página web
+  datosBuffer += "<p><h2>Datos de Sensores</h2><br/>";
+  datosBuffer += "<b>Temperatura:</b><b>" + Temperatura + "</b><b> °C</b><br/><hr>";
+  datosBuffer += "<b>Humedad del Aire:</b><b>" + Humedad + "</b><b> %</b><br/><hr>";
+  datosBuffer += "<b>Nivel de Agua:</b><b>" + NivelAgua + "</b><b> %</b><br/><hr>";
+  datosBuffer += "<b>Vapor:</b><b>" + Vapor + "</b><b> %</b><br/><hr>";
+  datosBuffer += "<b>Luz:</b><b>" + Luz + "</b><br/><hr>";
+  datosBuffer += "<b>Humedad del Suelo:</b><b>" + HumedadSuelo + "</b><b> %</b><br/></p>";
 
-    return datosBuffer;
+  return datosBuffer;
 }
 
-void reproducirMelodia()
-{
-    for (int i = 0; i < 32; i++)
-    {
-        tone(BUZZER_PIN, melody[i], 1000 / durations[i]);
-        delay(1000 / durations[i] * 1.3); // Pausa entre notas
-        noTone(BUZZER_PIN);
-    }
+void reproducirMelodia() {
+  for (int i = 0; i < 32; i++) {
+    tone(BUZZER_PIN, melody[i], 1000 / durations[i]);
+    delay(1000 / durations[i] * 1.3);  // Pausa entre notas
+    noTone(BUZZER_PIN);
+  }
 }
 
 // Función para procesar configuraciones recibidas desde la web
-void Configuracion_Callback(AsyncWebServerRequest *request)
-{
-    if (request->hasParam("value"))
-    {
-        String CargaHTTP = request->getParam("value")->value();
-        Serial.printf("[%lu]%s\r\n", millis(), CargaHTTP.c_str());
+void Configuracion_Callback(AsyncWebServerRequest *request) {
+  if (request->hasParam("value")) {
+    String CargaHTTP = request->getParam("value")->value();
+    Serial.printf("[%lu]%s\r\n", millis(), CargaHTTP.c_str());
 
-        // Control del LED
-        if (CargaHTTP == "LED")
-        {
-            EstadoLED = !EstadoLED;
-            digitalWrite(PIN_LED, EstadoLED ? HIGH : LOW);
-        }
-
-        // Control del ventilador
-        if (CargaHTTP == "VENTILADOR")
-        {
-            EstadoVentilador = !EstadoVentilador;
-            if (EstadoVentilador)
-            {
-                digitalWrite(PIN_VENTILADOR1, HIGH);
-                digitalWrite(PIN_VENTILADOR2, LOW);
-            }
-            else
-            {
-                digitalWrite(PIN_VENTILADOR1, LOW);
-                digitalWrite(PIN_VENTILADOR2, LOW);
-            }
-        }
-
-        // Control del riego
-        if (CargaHTTP == "RIEGO")
-        {
-            digitalWrite(PIN_RELE, HIGH);
-            delay(400);
-            digitalWrite(PIN_RELE, LOW);
-            delay(650);
-        }
-
-        // Control de música
-        if (CargaHTTP == "MUSICA")
-        {
-            reproducirMelodia();
-        }
+    // Control del LED
+    if (CargaHTTP == "LED") {
+      EstadoLED = !EstadoLED;
+      digitalWrite(PIN_LED, EstadoLED ? HIGH : LOW);
     }
-    request->send(200, "text/plain", "OK");
+
+    if (CargaHTTP == "DETENER") {
+      digitalWrite(PIN_LED, LOW);
+      digitalWrite(PIN_VENTILADOR1, LOW);
+      analogWrite(PIN_VENTILADOR1, 0);  // Apaga ventilador 2
+      digitalWrite(PIN_RELE, LOW);
+    }
+
+    // Control del ventilador
+    if (CargaHTTP == "VENTILADOR") {
+      EstadoVentilador = !EstadoVentilador;
+      digitalWrite(PIN_VENTILADOR1, EstadoVentilador ? HIGH : LOW);
+      if (EstadoVentilador) {
+        analogWrite(PIN_VENTILADOR1, 180);  // Apaga ventilador 2
+      } else {
+        analogWrite(PIN_VENTILADOR1, 0);  // Apaga ventilador 2
+        digitalWrite(PIN_VENTILADOR1, EstadoVentilador ? HIGH : LOW);
+      }
+    }
+
+    // Control del riego
+    if (CargaHTTP == "RIEGO") {
+      digitalWrite(PIN_RELE, HIGH);
+      delay(900);
+      digitalWrite(PIN_RELE, LOW);
+      delay(650);
+    }
+
+    // Control de música
+    if (CargaHTTP == "MUSICA") {
+      reproducirMelodia();
+    }
+  }
+  request->send(200, "text/plain", "OK");
 }
 
 // Función para manejar rutas no encontradas
-void noEncontrado(AsyncWebServerRequest *request)
-{
-    request->send(404, "text/plain", "No encontrado");
+void noEncontrado(AsyncWebServerRequest *request) {
+  request->send(404, "text/plain", "No encontrado");
 }
 
-void setup()
-{
-    Serial.begin(9600);
+void setup() {
+  Serial.begin(9600);
 
-    // Conectar a la red WiFi
-    WiFi.begin(ssid, contrasena);
-    while (!WiFi.isConnected())
-    {
-        delay(500);
-        Serial.print(".");
-    }
-    Serial.println("WiFi conectado.");
-    Serial.println("Dirección IP: ");
-    Serial.println(WiFi.localIP());
+  // Conectar a la red WiFi
+  WiFi.begin(ssid, contrasena);
+  while (!WiFi.isConnected()) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("WiFi conectado.");
+  Serial.println("Dirección IP: ");
+  Serial.println(WiFi.localIP());
 
-    // Configurar pines de los componentes
-    pinMode(PIN_LED, OUTPUT);
-    pinMode(PIN_VAPOR, INPUT);
-    pinMode(PIN_LUZ, INPUT);
-    pinMode(PIN_HUMEDAD_SUELO, INPUT);
-    pinMode(PIN_NIVEL_AGUA, INPUT);
-    pinMode(PIN_RELE, OUTPUT);
-    pinMode(PIN_VENTILADOR1, OUTPUT);
-    pinMode(PIN_VENTILADOR2, OUTPUT);
-    pinMode(BUZZER_PIN, OUTPUT);
+  // Configurar pines de los componentes
+  pinMode(PIN_LED, OUTPUT);
+  pinMode(PIN_VAPOR, INPUT);
+  pinMode(PIN_LUZ, INPUT);
+  pinMode(PIN_HUMEDAD_SUELO, INPUT);
+  pinMode(PIN_NIVEL_AGUA, INPUT);
+  pinMode(PIN_RELE, OUTPUT);
+  pinMode(PIN_VENTILADOR1, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
 
-    // Configurar pantalla LCD
-    pantalla.init();
-    pantalla.backlight();
-    pantalla.clear();
-    pantalla.setCursor(0, 0);
-    pantalla.print("IP:");
-    pantalla.setCursor(0, 1);
-    pantalla.print(WiFi.localIP());
+  // Configurar pantalla LCD
+  pantalla.init();
+  pantalla.backlight();
+  pantalla.clear();
+  pantalla.setCursor(0, 0);
+  pantalla.print("IP:");
+  pantalla.setCursor(0, 1);
+  pantalla.print(WiFi.localIP());
 
-    // Configurar rutas del servidor web
-    servidor.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-                { request->send(200, "text/html", pagina_html); });
-    servidor.on("/set", HTTP_GET, Configuracion_Callback);
-    servidor.on("/dht", HTTP_GET, [](AsyncWebServerRequest *request)
-                {
-        String datosSensores = FusionarDatos();
-        request->send(200, "text/html", datosSensores); });
-    servidor.onNotFound(noEncontrado);
+  // Configurar rutas del servidor web
+  servidor.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/html", pagina_html);
+  });
+  servidor.on("/set", HTTP_GET, Configuracion_Callback);
+  servidor.on("/dht", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String datosSensores = FusionarDatos();
+    request->send(200, "text/html", datosSensores);
+  });
+  servidor.onNotFound(noEncontrado);
 
-    // Iniciar servidor web
-    servidor.begin();
+  // Iniciar servidor web
+  servidor.begin();
 }
 
-void loop()
-{
-    // El servidor web maneja las peticiones de manera asincrónica
+void loop() {
+  // El servidor web maneja las peticiones de manera asincrónica
 }
